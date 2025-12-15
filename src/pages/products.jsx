@@ -1,31 +1,42 @@
-import { useState, useEffect } from "react";
-import { Button, Alert } from "react-bootstrap";
+import { useState, useEffect, useContext } from "react";
+import { Button, Alert, Badge } from "react-bootstrap";
+import { CartContext } from "../context/CartContext";
+
+const API_URL = "https://69403477993d68afba6b5574.mockapi.io/products";
 
 function RandomCart() {
-  const [carts, setCarts] = useState([]);
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [showAlert, setShowAlert] = useState(false);
+  
+  const { agregarAlCarrito } = useContext(CartContext);
+
   const [page, setPage] = useState(0);
-  const cartsPerPage = 3;
+  const productsPerPage = 8;
 
   useEffect(() => {
-    fetch("https://dummyjson.com/carts")
+    fetch(API_URL)
       .then((res) => res.json())
-      .then((data) => setCarts(data.carts))
+      .then((data) => {
+        setProducts(data);
+        setLoading(false);
+      })
       .catch((err) => console.error(err));
   }, []);
 
-  if (carts.length === 0) return <div>Loading...</div>;
+  if (loading) return <div className="text-center mt-5">Cargando productos...</div>;
 
-  const start = page * cartsPerPage;
-  const visibleCarts = carts.slice(start, start + cartsPerPage);
+  const start = page * productsPerPage;
+  const visibleProducts = products.slice(start, start + productsPerPage);
 
-  const handleAddToCart = () => {
+  const handleAddToCart = (product) => {
+    agregarAlCarrito(product);
     setShowAlert(true);
-    setTimeout(() => setShowAlert(false), 3000);
+    setTimeout(() => setShowAlert(false), 2000);
   };
 
   const handleNext = () => {
-    if ((page + 1) * cartsPerPage < carts.length) setPage(page + 1);
+    if ((page + 1) * productsPerPage < products.length) setPage(page + 1);
   };
 
   const handlePrev = () => {
@@ -33,18 +44,19 @@ function RandomCart() {
   };
 
   return (
-    <div style={{ textAlign: "center", marginTop: "20px" }}>
+    <div className="container" style={{ textAlign: "center", marginTop: "20px" }}>
+      
       {showAlert && (
         <Alert
-          variant="warning"
-          className="text-center mx-auto"
-          style={{ width: "60%" }}
+          variant="success"
+          className="position-fixed top-0 start-50 translate-middle-x mt-3"
+          style={{ zIndex: 9999, width: "auto" }}
         >
-          🚧 ¡¡¡Esta función aún está en desarrollo!!! 🚧
+          ¡Producto agregado al carrito! ✅ 
         </Alert>
       )}
 
-      <h2 style={{ textAlign: "center", margin: "1rem" }}>Productos:</h2>
+      <h2 className="text-center mb-4">Catálogo de Productos</h2>
 
       <div
         style={{
@@ -55,46 +67,54 @@ function RandomCart() {
           marginTop: "20px",
         }}
       >
-        {visibleCarts.map((cart) =>
-          cart.products.map((product) => (
-            <div
-              key={product.id}
-              style={{
-                border: "1px solid #ccc",
-                borderRadius: "8px",
-                padding: "10px",
-                width: "200px",
-                textAlign: "center",
-              }}
-            >
-              <img
-                src={product.thumbnail}
-                alt={product.title}
-                style={{ width: "100%", borderRadius: "6px" }}
-              />
-              <h3>{product.title}</h3>
-              <p>Disponibles: {product.quantity} Unidades</p>
-              <Button variant="primary" onClick={handleAddToCart}>
-                Agregar carrito 🛒
-              </Button>
+        {visibleProducts.map((product) => (
+          <div
+            key={product.id}
+            className="card shadow-sm"
+            style={{ width: "250px", padding: "10px" }}
+          >
+            <div style={{ height: "200px", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <img
+                src={product.imagen}
+                alt={product.nombre}
+                onError={(e) => { e.target.src = "https://placehold.co/200x200?text=No+Image"; }} 
+                style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain" }}
+                />
             </div>
-          ))
-        )}
+            
+            <div className="card-body">
+                <h5 className="card-title">{product.nombre}</h5>
+                <h6 className="card-subtitle mb-2 text-muted">
+                    ${Number(product.precio).toFixed(2)}
+                </h6>
+                <p className="card-text">Stock: {product.stock}</p>
+                
+                <Button 
+                    variant="primary" 
+                    className="w-100"
+                    onClick={() => handleAddToCart(product)}
+                >
+                    Agregar carrito 🛒
+                </Button>
+            </div>
+          </div>
+        ))}
       </div>
 
-      <div style={{ marginTop: "20px" }}>
+      <div style={{ marginTop: "30px", marginBottom: "30px" }}>
         <Button
-          variant="primary"
+          variant="secondary"
           onClick={handlePrev}
           disabled={page === 0}
           style={{ marginRight: "10px" }}
         >
          Anterior
         </Button>
+        <span className="mx-2">Página {page + 1}</span>
         <Button
-          variant="primary"
+          variant="secondary"
           onClick={handleNext}
-          disabled={(page + 1) * cartsPerPage >= carts.length}
+          disabled={(page + 1) * productsPerPage >= products.length}
         >
           Siguiente 
         </Button>
